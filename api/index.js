@@ -51,6 +51,13 @@ function validateDeviceInput(id, n, k) {
     if (isNaN(keyNumber) || idNumber < 1 || idNumber > 20) {
         return "Invalid input: id must be a number between 1 and 20.";
     }
+
+    // Validate id was not already included
+    var device = db.public.many("SELECT * FROM devices WHERE device_id = '"+id+"'");    
+    if(device.length) {
+        return "Invalid input: id already exists.";
+    }    
+
     return null;
 }
 
@@ -61,11 +68,20 @@ function validateMeasurementInput(id, t, h) {
         return "Invalid input: id, temperature, and humidity are required and cannot be empty.";        
     }
 
-    // Validate id is a number between 1 and 10
+    // Validate id is a number between 1 and 20
     const idNumber = Number(id);
     if (isNaN(idNumber) || idNumber < 1 || idNumber > 20) {
         return "Invalid input: id must be a number between 1 and 20.";
     }
+
+    // TODO Validate t and h measurments 
+
+    // Validate measurement is from a registered device
+    var device = db.public.many("SELECT * FROM devices WHERE device_id = '"+id+"'");
+    //console.log(device);
+    if(device.length == 0) {
+        return "Invalid input: id not registered.";
+    }    
 
     return null;
 }
@@ -92,7 +108,7 @@ app.post('/measurement', function (req, res) {
         return res.status(400).send(err);
     }         
      
-    const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h, r:timestamp});
+    const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h});
 	res.send("received measurement into " +  insertedId);
 });
 
@@ -175,15 +191,15 @@ startDatabase().then(async() => {
     const addAdminEndpoint = require("./admin.js");
     addAdminEndpoint(app, render);
 
-    await insertMeasurement({id:'00', t:'18', h:'78'});
-    await insertMeasurement({id:'00', t:'19', h:'77'});
-    await insertMeasurement({id:'00', t:'17', h:'77'});
-    await insertMeasurement({id:'01', t:'17', h:'77'});
+    //await insertMeasurement({id:'00', t:'18', h:'78'});
+    //await insertMeasurement({id:'00', t:'19', h:'77'});
+    //await insertMeasurement({id:'00', t:'17', h:'77'});
+    //await insertMeasurement({id:'01', t:'17', h:'77'});
     console.log("mongo measurement database Up");
 
     db.public.none("CREATE TABLE devices (device_id VARCHAR, name VARCHAR, key VARCHAR, received_at TIMESTAMPTZ DEFAULT NOW())");
-    db.public.none("INSERT INTO devices VALUES ('00', 'Fake Device 00', '123456')");
-    db.public.none("INSERT INTO devices VALUES ('01', 'Fake Device 01', '234567')");
+    //db.public.none("INSERT INTO devices VALUES ('00', 'Fake Device 00', '123456')");
+    //db.public.none("INSERT INTO devices VALUES ('01', 'Fake Device 01', '234567')");
     db.public.none("CREATE TABLE users (user_id VARCHAR, name VARCHAR, key VARCHAR)");
     db.public.none("INSERT INTO users VALUES ('1','Ana','admin123')");
     db.public.none("INSERT INTO users VALUES ('2','Beto','user123')");
