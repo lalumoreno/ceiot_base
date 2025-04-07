@@ -23,6 +23,8 @@ async function getDatabase() {
 }
 
 async function insertMeasurement(message) {
+    const timestamp = new Date().toISOString();    
+    message.received_at = timestamp; // received_at
     const {insertedId} = await database.collection(collectionName).insertOne(message);
     return insertedId;
 }
@@ -81,37 +83,33 @@ const PORT = 8080;
 app.post('/measurement', function (req, res) {
     console.log("device id    : " + req.body.id + " temperature : " + req.body.t + " humidity    : " + req.body.h);
 
-    ////////////////////////
+    // Validate measurement before insert
     const { id, t, h} = req.body;
     const err = validateMeasurementInput(id,t,h);
 
     if(err) {
         console.log(err);
         return res.status(400).send(err);
-    }
-     //TODO Add tests
-    /////////////////////////
-
-    const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h});
+    }         
+     
+    const {insertedId} = insertMeasurement({id:req.body.id, t:req.body.t, h:req.body.h, r:timestamp});
 	res.send("received measurement into " +  insertedId);
 });
 
 app.post('/device', function (req, res) {	
     
     console.log("device id    : " + req.body.id + " name        : " + req.body.n + " key         : " + req.body.k );
-    //TODO Validate message?
+    
+    // Validate device before insert
     const { id, n, k } = req.body;
     const err = validateDeviceInput(id,n,k);
     
     if(err) {
         console.log(err);
         return res.status(400).send(err);
-    }
-    //TODO Add tests
-    /////////////////////////
+    }    
 
-    //console.log("device id    : " + req.body.id + " name        : " + req.body.n + " key         : " + req.body.k );
-    db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+"', '"+req.body.k+"')");
+    db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+ "', '"+req.body.k+ "')");
 	res.send("received new device");
 });
 
@@ -183,7 +181,7 @@ startDatabase().then(async() => {
     await insertMeasurement({id:'01', t:'17', h:'77'});
     console.log("mongo measurement database Up");
 
-    db.public.none("CREATE TABLE devices (device_id VARCHAR, name VARCHAR, key VARCHAR)");
+    db.public.none("CREATE TABLE devices (device_id VARCHAR, name VARCHAR, key VARCHAR, received_at TIMESTAMPTZ DEFAULT NOW())");
     db.public.none("INSERT INTO devices VALUES ('00', 'Fake Device 00', '123456')");
     db.public.none("INSERT INTO devices VALUES ('01', 'Fake Device 01', '234567')");
     db.public.none("CREATE TABLE users (user_id VARCHAR, name VARCHAR, key VARCHAR)");
