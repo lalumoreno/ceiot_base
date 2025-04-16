@@ -57,12 +57,6 @@ function validateDeviceInput(id, n, k) {
         return "Invalid input: key must be a number between 100000 and 999999";
     }
 
-    // Validate id was not already included
-    var device = db.public.many("SELECT * FROM devices WHERE device_id = '"+id+"'");    
-    if(device.length) {
-        return "Invalid input: id already exists";
-    }    
-
     return null;
 }
 
@@ -104,8 +98,7 @@ app.use(express.static('spa/static'));
 
 const PORT = 8080;
 
-app.post('/measurement', function (req, res) {
-    //console.log("device id    : " + req.body.id + " temperature : " + req.body.t + " humidity    : " + req.body.h);
+app.post('/measurement', function (req, res) {    
 
     // Validate measurement before insert
     const { id, t, h} = req.body;
@@ -122,9 +115,7 @@ app.post('/measurement', function (req, res) {
 });
 
 app.post('/device', function (req, res) {	
-    
-    //console.log("device id    : " + req.body.id + " name        : " + req.body.n + " key         : " + req.body.k );
-    
+        
     // Validate device before insert
     const { id, n, k } = req.body;
     const err = validateDeviceInput(id,n,k);
@@ -135,9 +126,21 @@ app.post('/device', function (req, res) {
         return res.status(400).send(err);
     }    
 
-    db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+ "', '"+req.body.k+ "')");
-    console.log("Received NEW device" + deviceInfo);
-	res.send("Received NEW device");    
+    // Validate if id exists
+    var device = db.public.many("SELECT * FROM devices WHERE device_id = '"+id+"'");
+    if(device.length) {
+        // Update
+        // TODO update timestamp
+         db.public.none("UPDATE devices SET name = '"+req.body.n+ "', key = '"+req.body.k+"' WHERE device_id = '"+req.body.id+"'");
+         console.log("Received UPDATE device" + deviceInfo);
+         res.send("Received UPDATE device");    
+    } else {
+        // Insert
+        db.public.none("INSERT INTO devices VALUES ('"+req.body.id+ "', '"+req.body.n+ "', '"+req.body.k+ "')");
+        console.log("Received NEW device" + deviceInfo);
+        res.send("Received NEW device");    
+    }
+    
 });
 
 
@@ -204,6 +207,7 @@ startDatabase().then(async() => {
 
     console.log("mongo measurement database Up");
 
+    // TODO protect received_at
     db.public.none("CREATE TABLE devices (device_id VARCHAR, name VARCHAR, key VARCHAR, received_at TIMESTAMPTZ DEFAULT NOW())");    
     db.public.none("CREATE TABLE users (user_id VARCHAR, name VARCHAR, key VARCHAR)");
     db.public.none("INSERT INTO users VALUES ('1','Ana','admin123')");

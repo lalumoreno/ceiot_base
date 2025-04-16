@@ -9,5 +9,5 @@ while true; do
 	     -d "id=$RANDOM_ID&n=$NAME&k=$KEY"
 	echo ""
 	     
-sleep 10
+sleep 5
 done
