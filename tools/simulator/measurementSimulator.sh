@@ -1,7 +1,7 @@
 #!/bin/bash
 
 while true; do
-	RANDOM_ID=$((1 + RANDOM % 50))
+	RANDOM_ID=$((1 + RANDOM % 30))
 	TEMP=$((RANDOM % 150))
 	HUM=$((RANDOM % 150))
 		
